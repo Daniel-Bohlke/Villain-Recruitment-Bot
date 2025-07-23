@@ -1,4 +1,6 @@
 const { Client, SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = require('../../helper-function.js');
+
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -13,11 +15,39 @@ module.exports = {
                 .setName('decline-recruitment')
                 .setDescription('Decline the recruitment and remain a Hero.')),
 	async execute(interaction) {
-		if(interaction.options.getSubcommand() === 'accept'){
-			console.log('accepted');
+		var game = getGame(interaction);
+		if(game === null){
+			var response = 'Error - The game has not been started.';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+			return;
 		}
-		else if(interaction.options.getSubcommand() === 'decline'){
-			console.log('declined');
+		var player = findPlayer(game.players, interaction.user.id);
+		if(player.beingRecruited){
+			if(game != null){
+				if(interaction.options.getSubcommand() === 'accept'){
+					console.log('accepted');
+					player.isVillain = true;
+					directMessageUser(interaction, "Your recruitment of player: " + player.user.username + " has been accepted and they are now a villain.", game.recruitingPlayer.user.id);
+				}
+				else if(interaction.options.getSubcommand() === 'decline'){
+					console.log('declined');
+					directMessageUser(interaction, "Your recruitment of player: " + player.user.username + " has been rejected and they will remain a hero.", game.recruitingPlayer.user.id);
+				}
+				player.beingRecruited = false;
+				game.players[player.index] = player;
+				game.pendingResponse = false;
+				saveGame();
+			}
+		}
+		else{
+			if(player === null){
+				var response = 'Error - You are not a player in the game.';
+				await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+			}
+			else{
+				var response = 'Error - You are not being recruited.';
+				await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+			}
 		}
 		//var username = interaction.options.getUser('user').username;
 		//var userID = interaction.options.getUser('user').id;

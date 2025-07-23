@@ -4,11 +4,11 @@ const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = requi
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('recruit')
-		.setDescription('Recruits a Villain.')
+		.setName('assassinate')
+		.setDescription('Assassinates a Hero')
 		.addUserOption(option =>
 		option.setName('user')
-			.setDescription('The user you would like to recruit')
+			.setDescription('The user you would like to assassinate. WARNING - THIS ACTION CANNOT BE UNDONE.')
 			.setRequired(true)),
 	async execute(interaction) {
 		var game = getGame(interaction);
@@ -20,22 +20,22 @@ module.exports = {
 		var username = interaction.options.getUser('user').username;
 		var userID = interaction.options.getUser('user').id;
 		//Is the requesting person a villain and is the targeted person a Hero?
-		var recruitingPlayer = findPlayer(game.players, interaction.user.id);
-		var targetedPlayer = findPlayer(game.players, userID);
-		if(game.pendingResponse){
-			var response = 'Error - A player is already being recruited.';
+		var assassinatingPlayer = findPlayer(game.players, interaction.user.id);
+		var targetedPlayer = findPlayer(game.players, userID);;
+		if(!assassinatingPlayer.isVillain){
+			var response = 'Error - You are not a Villain.';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+		}
+		else if(game.pendingResponse){
+			var response = 'Error - A player is currently being recruited.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(!game.villainActionReady){
 			var response = 'Error - The Villain team has already acted this round.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
-		else if(!recruitingPlayer.isVillain){
-			var response = 'Error - You are not a Villain.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(recruitingPlayer.isDead){
-			var response = 'Error - You are dead and cannot recruit.';
+		else if(assassinatingPlayer.isDead){
+			var response = 'Error - You are dead and cannot assassinate.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(targetedPlayer.isVillain){
@@ -46,7 +46,7 @@ module.exports = {
 			var response = 'Error - The chosen player is dead.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}		
-		else if(recruitingPlayer === null){
+		else if(assassinatingPlayer === null){
 			//Is the requesting person even in the game?
 			var response = 'Error - You are not a player in the game.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
@@ -55,19 +55,21 @@ module.exports = {
 			//Is the targeted person even in the game?
 			var response = 'Error - User: ' + username + ' is not a player in the game';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		else if(game.numVillains === game.maxVillains){
-			//Are the max number of villains are already in the game?
-			var response = 'The max number of villains has currently been reached.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
-		else{
-			game.recruitingPlayer = recruitingPlayer;
-			game.players[targetedPlayer.index] = targetedPlayer;
+		else if(targetedPlayer.shadowArmor){
+			//Does the targeted player have Shadow Armor?
+			var response = 'Your attempted assassination of User: ' + username + ' has failed! As they possess the Shadow Armor!';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 			game.villainActionReady = false;
 			saveGame();
-			directMessageUser(interaction, "You are being recruited by a villain, please use the \"respond\" function in your server to respond.", userID);
-			var response = 'You have attempted to recruit user: ' + username;
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+		}
+		else{
+			targetedPlayer.isDead = true;
+			game.villainActionReady = false;
+			game.players[targetedPlayer.index] = targetedPlayer;
+			saveGame();
+			var response = 'The following player has been assassinated! : ' + username + '\n\nYour death will be avenged.";
+			await interaction.reply({ content: response });
 			//console.log(interaction.client.text);
 		}
 		//await interaction.deleteReply();

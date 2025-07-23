@@ -9,7 +9,7 @@ const { Player } = require('./Player.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.commands = new Collection();
-client.text = "Test";
+client.text = null;
 
 const foldersPath = path.join(__dirname, 'commands');
 const commandFolders = fs.readdirSync(foldersPath);

@@ -13,24 +13,15 @@ module.exports = {
 	async execute(interaction) {
 		var game = getGame(interaction);
 		if(game === null){
-			var response = 'Error - The game has not been started.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 			return;
 		}
 		var username = interaction.options.getUser('user').username;
 		var userID = interaction.options.getUser('user').id;
 		//Is the requesting person a villain and is the targeted person a Hero?
+		var isVillain = false;
 		var recruitingPlayer = findPlayer(game.players, interaction.user.id);
-		var targetedPlayer = findPlayer(game.players, userID);
-		if(game.pendingResponse){
-			var response = 'Error - A player is already being recruited.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(!game.villainActionReady){
-			var response = 'Error - The Villain team has already acted this round.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(!recruitingPlayer.isVillain){
+		var targetedPlayer = findPlayer(game.players, userID);;
+		if(!recruitingPlayer.isVillain){
 			var response = 'Error - You are not a Villain.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
@@ -63,7 +54,6 @@ module.exports = {
 		else{
 			game.recruitingPlayer = recruitingPlayer;
 			game.players[targetedPlayer.index] = targetedPlayer;
-			game.villainActionReady = false;
 			saveGame();
 			directMessageUser(interaction, "You are being recruited by a villain, please use the \"respond\" function in your server to respond.", userID);
 			var response = 'You have attempted to recruit user: ' + username;
