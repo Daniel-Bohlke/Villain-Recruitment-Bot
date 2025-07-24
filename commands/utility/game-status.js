@@ -4,8 +4,8 @@ const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = requi
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('status')
-		.setDescription('Shows the current living and dead players.'),
+		.setName('game-status')
+		.setDescription('Shows the current living and dead players in the game.'),
 	async execute(interaction) {
 		var game = getGame(interaction);
 		if(game === null){

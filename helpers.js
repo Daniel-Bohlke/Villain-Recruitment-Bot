@@ -7,7 +7,7 @@ export function getGame(interaction){
 		return game;
 	}
 	catch(e){
-		var response = 'Error - a game has not been started';
+		var response = 'Error - a game has not been started or another error has occured.';
 		await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		return null;
 	}
@@ -16,6 +16,10 @@ export function getGame(interaction){
 export function saveGame(interaction, client){
 	interaction.client.text = game.toJSON();
 	return;
+}
+
+export function endGame(interaction){
+	interaction.Client.text = '';
 }
 
 export function directMessageUser(interaction, message, userID){
@@ -59,13 +63,17 @@ export class Game {
 	villainActionReady;
 	pendingResponse;
 	recruitingPlayer;
+	livingPlayers;
+	grantingShadowArmor;
 	
-	function Player(numVillains, maxVillains, players){
+	function Game(numVillains, maxVillains, players){
 		this.numVillains = numVillains;
 		this.maxVillains = maxVillains;
 		this.players = players;
+		this.livingPlayers = players.Count;
 		this.villainActionReady = true;
 		this.pendingResponse = false;
 		this.recruitingPlayer = null;
+		this.grantingShadowArmor = false;
 	}
 }

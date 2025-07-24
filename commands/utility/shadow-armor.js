@@ -4,29 +4,23 @@ const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = requi
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('recruit')
-		.setDescription('Recruits a Villain.')
+		.setName('shadowArmor')
+		.setDescription('Grants Shadow Armor to a player.')
 		.addUserOption(option =>
 		option.setName('user')
-			.setDescription('The user you would like to recruit')
+			.setDescription('The user you would like to give the Shadow Armor to.')
 			.setRequired(true)),
 	async execute(interaction) {
 		var game = getGame(interaction);
 		if(game === null){
-			var response = 'Error - The game has not been started.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 			return;
 		}
 		var username = interaction.options.getUser('user').username;
 		var userID = interaction.options.getUser('user').id;
 		//Is the requesting person a villain and is the targeted person a Hero?
-		var recruitingPlayer = findPlayer(game.players, interaction.user.id);
-		var targetedPlayer = findPlayer(game.players, userID);
-		if(game.pendingResponse){
-			var response = 'Error - Villain Actions are not available yet.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(recruitingPlayer === null){
+		var giftingPlayer = findPlayer(game.players, interaction.user.id);
+		var targetedPlayer = findPlayer(game.players, userID);;
+		if(giftingPlayer === null){
 			//Is the requesting person even in the game?
 			var response = 'Error - You are not a player in the game.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
@@ -35,38 +29,45 @@ module.exports = {
 			//Is the targeted person even in the game?
 			var response = 'Error - User: ' + username + ' is not a player in the game';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		else if(!game.villainActionReady){
-			var response = 'Error - The Villain team has already acted this round.';
+		}
+		else if(giftingPlayer.isVillain){
+			var response = 'Error - You are a Villain.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
-		else if(!recruitingPlayer.isVillain){
-			var response = 'Error - You are not a Villain.';
+		else if(!giftingPlayer.isDead){
+			var response = 'Error - You are not dead.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
-		else if(recruitingPlayer.isDead){
-			var response = 'Error - You are dead and cannot recruit.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(targetedPlayer.isVillain){
-			var response = 'Error - The target is not a Hero.';
+		else if(game.villainActionReady){
+			var response = 'Error - It is currently the Villains' turn to act.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(targetedPlayer.isDead){
 			var response = 'Error - The chosen player is dead.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}		
-		else if(game.numVillains === game.maxVillains){
-			//Are the max number of villains are already in the game?
-			var response = 'The max number of villains has currently been reached.';
+		else if(!game.grantingShadowArmor){
+			var response = 'Error - Shadow Armor cannot be granted at this time.';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+		}
+		else if(!giftingPlayer.canGrantShadowArmor){
+			var response = 'Error - You are not the player authorized to grant Shadow Armor at this time.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else{
+			giftingPlayer.canGrantShadowArmor = false;
+			//make sure nobody else has Shadow Armor
+			game.players.forEach((player) => player.shadowArmor = false);
+			targetedPlayer.shadowArmor = true;
+			game.villainActionReady = true;
+			game.players[giftingPlayer.index] = giftingPlayer;
 			game.players[targetedPlayer.index] = targetedPlayer;
-			game.pendingResponse = true;
 			saveGame();
-			directMessageUser(interaction, "You are being recruited by a villain, please use the \"respond\" function in your server to respond.", userID);
-			var response = 'You have attempted to recruit user: ' + username;
+			directMessageUser(interaction, "You have been granted the Shadow Armor and cannot die until another Hero dies.", userID);
+			var response = 'You have granted the Shadow Armor to: ' + username;
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+			response = 'The Shadow Armor has been granted. The game may now continue.';
+			await interaction.reply({ content: response });
 			//console.log(interaction.client.text);
 		}
 		//await interaction.deleteReply();

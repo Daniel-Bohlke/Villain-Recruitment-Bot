@@ -22,7 +22,12 @@ module.exports = {
 			return;
 		}
 		var player = findPlayer(game.players, interaction.user.id);
-		if(player.beingRecruited){
+		if(player === null){
+			var response = 'Error - You are not a player in the game.';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+			return;
+		}
+		else if(player.beingRecruited){
 			if(game != null){
 				if(interaction.options.getSubcommand() === 'accept'){
 					console.log('accepted');
@@ -36,6 +41,7 @@ module.exports = {
 				player.beingRecruited = false;
 				game.players[player.index] = player;
 				game.pendingResponse = false;
+				game.villainActionReady = false;
 				saveGame();
 			}
 		}

@@ -22,12 +22,22 @@ module.exports = {
 		//Is the requesting person a villain and is the targeted person a Hero?
 		var assassinatingPlayer = findPlayer(game.players, interaction.user.id);
 		var targetedPlayer = findPlayer(game.players, userID);;
-		if(!assassinatingPlayer.isVillain){
+		if(assassinatingPlayer === null){
+			//Is the requesting person even in the game?
+			var response = 'Error - You are not a player in the game.';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+		}
+		else if(targetedPlayer === null){
+			//Is the targeted person even in the game?
+			var response = 'Error - User: ' + username + ' is not a player in the game';
+			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+		}
+		else if(!assassinatingPlayer.isVillain){
 			var response = 'Error - You are not a Villain.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
-		else if(game.pendingResponse){
-			var response = 'Error - A player is currently being recruited.';
+		else if(game.pendingResponse || game.grantingShadowArmor){
+			var response = 'Error - Villain Actions are not available yet.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(!game.villainActionReady){
@@ -46,16 +56,6 @@ module.exports = {
 			var response = 'Error - The chosen player is dead.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}		
-		else if(assassinatingPlayer === null){
-			//Is the requesting person even in the game?
-			var response = 'Error - You are not a player in the game.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(targetedPlayer === null){
-			//Is the targeted person even in the game?
-			var response = 'Error - User: ' + username + ' is not a player in the game';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
 		else if(targetedPlayer.shadowArmor){
 			//Does the targeted player have Shadow Armor?
 			var response = 'Your attempted assassination of User: ' + username + ' has failed! As they possess the Shadow Armor!';
@@ -66,6 +66,7 @@ module.exports = {
 		else{
 			targetedPlayer.isDead = true;
 			game.villainActionReady = false;
+			targetedPlayer.canGrantShadowArmor = true;
 			game.players[targetedPlayer.index] = targetedPlayer;
 			saveGame();
 			var response = 'The following player has been assassinated! : ' + username + '\n\nYour death will be avenged.";
