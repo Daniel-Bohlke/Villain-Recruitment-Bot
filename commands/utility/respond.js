@@ -1,5 +1,5 @@
 const { Client, SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = require('../../helper-function.js');
+const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = require('../../helpers.js');
 
 
 module.exports = {
@@ -32,11 +32,11 @@ module.exports = {
 				if(interaction.options.getSubcommand() === 'accept'){
 					console.log('accepted');
 					player.isVillain = true;
-					directMessageUser(interaction, "Your recruitment of player: " + player.user.username + " has been accepted and they are now a villain.", game.recruitingPlayer.user.id);
+					await interaction.client.users.send(game.recruitingPlayer.user.id, "Your recruitment of player: " + player.user.username + " has been accepted and they are now a villain.");
 				}
 				else if(interaction.options.getSubcommand() === 'decline'){
 					console.log('declined');
-					directMessageUser(interaction, "Your recruitment of player: " + player.user.username + " has been rejected and they will remain a hero.", game.recruitingPlayer.user.id);
+					await interaction.client.users.send(game.recruitingPlayer.user.id, "Your recruitment of player: " + player.user.username + " has been rejected and they will remain a hero.");
 				}
 				player.beingRecruited = false;
 				game.players[player.index] = player;

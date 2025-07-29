@@ -25,7 +25,7 @@ module.exports = {
 			var response = 'You are a ' + alignment + '\nYou are currently ' + alive + '\n';
 			if(player.isVillain){
 				var fellowVillainList = '';
-				game.players.forEach((player) => if(player.isVillain){fellowVillainList += '\n- ' + player.user.username + ' (' + (player.isDead ? 'Dead' : 'Alive') + ')';});
+				game.players.forEach((player) => {if(player.isVillain){fellowVillainList += '\n- ' + player.user.username + ' (' + (player.isDead ? 'Dead' : 'Alive') + ')';}});
 				response += '\nYour current fellow Villains are: ' + fellowVillainList;
 			}
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });

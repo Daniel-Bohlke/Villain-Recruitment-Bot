@@ -1,4 +1,4 @@
-const { Client, SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { Client, SlashCommandBuilder, MessageFlags } = import('discord.js');
 
 
 export function getGame(interaction){
@@ -7,8 +7,6 @@ export function getGame(interaction){
 		return game;
 	}
 	catch(e){
-		var response = 'Error - a game has not been started or another error has occured.';
-		await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		return null;
 	}
 }
@@ -20,10 +18,6 @@ export function saveGame(interaction, client){
 
 export function endGame(interaction){
 	interaction.Client.text = '';
-}
-
-export function directMessageUser(interaction, message, userID){
-	await interaction.client.users.send(userID, message);
 }
 
 export function findPlayer(players, id){
@@ -45,7 +39,7 @@ export class Player {
 	shadowArmor;
 	canGrantShadowArmor;
 	
-	function Player(user, index){
+	constructor(user, index){
 		this.index = index;
 		this.user = user;
 		this.isVillain = false;
@@ -66,7 +60,7 @@ export class Game {
 	livingPlayers;
 	grantingShadowArmor;
 	
-	function Game(numVillains, maxVillains, players){
+	constructor(numVillains, maxVillains, players){
 		this.numVillains = numVillains;
 		this.maxVillains = maxVillains;
 		this.players = players;

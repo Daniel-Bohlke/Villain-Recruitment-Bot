@@ -8,7 +8,7 @@ module.exports = {
 		.setDescription('Publicly kills a player.')
 		.addUserOption(option =>
 		option.setName('user')
-			.setDescription('The user to be eliminated. WARNING - THIS ACTION CANNOT BE UNDONE.');
+			.setDescription('The user to be eliminated. WARNING - THIS ACTION CANNOT BE UNDONE.')
 			.setRequired(true)),
 	async execute(interaction) {
 		var game = getGame(interaction);
@@ -22,7 +22,7 @@ module.exports = {
 		var requestingPlayer = findPlayer(game.players, interaction.user.id);
 		var targetedPlayer = findPlayer(game.players, userID);
 		if(game.villainActionReady){
-			var response = 'Error - It is currently the Villains' turn to act.';
+			var response = 'Error - It is currently the Villains\' turn to act.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(requestingPlayer === null){

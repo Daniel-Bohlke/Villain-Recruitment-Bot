@@ -15,13 +15,13 @@ module.exports = {
 		}
 		var deadList = '';
 		var livingList = '';
-		game.players.forEach((player) => 
+		game.players.forEach((player) => {
 			if(player.isDead){
 				deadList = deadList + player.user.username + '\n';
 			}
 			else{
 				livingList = livingList + player.user.username + '\n';
-			}
+		}}
 		);
 		var response = 'The following players are still alive: \n' + livingList + '\nWhile the following players have all passed on: \n' + deadList;
 		await interaction.reply({ content: response });

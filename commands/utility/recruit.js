@@ -35,6 +35,7 @@ module.exports = {
 			//Is the targeted person even in the game?
 			var response = 'Error - User: ' + username + ' is not a player in the game';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
+		}
 		else if(!game.villainActionReady){
 			var response = 'Error - The Villain team has already acted this round.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
@@ -64,7 +65,7 @@ module.exports = {
 			game.players[targetedPlayer.index] = targetedPlayer;
 			game.pendingResponse = true;
 			saveGame();
-			directMessageUser(interaction, "You are being recruited by a villain, please use the \"respond\" function in your server to respond.", userID);
+			await interaction.client.users.send(userID, "You are being recruited by a villain, please use the \"respond\" function in your server to respond.");
 			var response = 'You have attempted to recruit user: ' + username;
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 			//console.log(interaction.client.text);

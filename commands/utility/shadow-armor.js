@@ -4,7 +4,7 @@ const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = requi
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('shadowArmor')
+		.setName('shadow-armor')
 		.setDescription('Grants Shadow Armor to a player.')
 		.addUserOption(option =>
 		option.setName('user')
@@ -39,7 +39,7 @@ module.exports = {
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(game.villainActionReady){
-			var response = 'Error - It is currently the Villains' turn to act.';
+			var response = 'Error - It is currently the Villains\' turn to act.';
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 		}
 		else if(targetedPlayer.isDead){
@@ -63,7 +63,7 @@ module.exports = {
 			game.players[giftingPlayer.index] = giftingPlayer;
 			game.players[targetedPlayer.index] = targetedPlayer;
 			saveGame();
-			directMessageUser(interaction, "You have been granted the Shadow Armor and cannot die until another Hero dies.", userID);
+			await interaction.client.users.send(userID, "You have been granted the Shadow Armor and cannot die until another Hero dies.");
 			var response = 'You have granted the Shadow Armor to: ' + username;
 			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
 			response = 'The Shadow Armor has been granted. The game may now continue.';

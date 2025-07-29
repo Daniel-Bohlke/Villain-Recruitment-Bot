@@ -69,7 +69,7 @@ module.exports = {
 			targetedPlayer.canGrantShadowArmor = true;
 			game.players[targetedPlayer.index] = targetedPlayer;
 			saveGame();
-			var response = 'The following player has been assassinated! : ' + username + '\n\nYour death will be avenged.";
+			var response = 'The following player has been assassinated! : ' + username + '\n\nYour death will be avenged.';
 			await interaction.reply({ content: response });
 			//console.log(interaction.client.text);
 		}
