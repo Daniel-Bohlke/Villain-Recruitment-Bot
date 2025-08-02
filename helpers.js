@@ -11,8 +11,8 @@ export function getGame(interaction){
 	}
 }
 
-export function saveGame(interaction, client){
-	interaction.client.text = game.toJSON();
+export function saveGame(interaction, game){
+	interaction.client.text = JSON.stringify(game);
 	return;
 }
 
