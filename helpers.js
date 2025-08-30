@@ -4,6 +4,7 @@ const { Client, SlashCommandBuilder, MessageFlags } = import('discord.js');
 export function getGame(interaction){
 	try{
 		var game = JSON.parse(interaction.client.text);
+		console.log(game);
 		return game;
 	}
 	catch(e){
@@ -17,17 +18,30 @@ export function saveGame(interaction, game){
 }
 
 export function endGame(interaction){
-	interaction.Client.text = '';
+	interaction.client.text = '';
 }
 
 export function findPlayer(players, id){
 	var player = null;
-	for(let i = 0; i < players.count; i++){
+	for(let i = 0; i < players.length; i++){
 		if(players[i].user.id === id){
+			console.log("Found Player: " + players[i].user.username);
 			player = players[i];
 		}
 	}
 	return player;
+}
+
+export async function directMessageUser(interaction, userId, payload) {
+  try {
+    const user = await interaction.client.users.fetch(userId);
+    if (!user) return false;
+    await user.send(payload);
+    return true;
+  } catch (err) {
+    console.error(`Failed to DM user ${userId}:`, err);
+    return false;
+  }
 }
 
 export class Player {
@@ -65,7 +79,7 @@ export class Game {
 		this.maxVillains = maxVillains;
 		this.players = players;
 		this.livingPlayers = players.Count;
-		this.villainActionReady = true;
+		this.villainActionReady = false;
 		this.pendingResponse = false;
 		this.recruitingPlayer = null;
 		this.grantingShadowArmor = false;

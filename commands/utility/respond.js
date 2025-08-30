@@ -1,65 +1,113 @@
-const { Client, SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = require('../../helpers.js');
-
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
+const { getGame, findPlayer, saveGame, directMessageUser } = require('../../helpers.js');
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('respond')
-		.setDescription('Responds to Villain Recruitment.')
-		.addSubcommand(subcommand =>
+    data: new SlashCommandBuilder()
+        .setName('respond')
+        .setDescription('Responds to Villain Recruitment.')
+        .addSubcommand(subcommand =>
             subcommand
                 .setName('accept-recruitment')
-                .setDescription('Accept the recruitment and become a Villain.'))
+                .setDescription('Accept the recruitment and become a Villain.')
+        )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('decline-recruitment')
-                .setDescription('Decline the recruitment and remain a Hero.')),
-	async execute(interaction) {
-		var game = getGame(interaction);
-		if(game === null){
-			var response = 'Error - The game has not been started.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-			return;
-		}
-		var player = findPlayer(game.players, interaction.user.id);
-		if(player === null){
-			var response = 'Error - You are not a player in the game.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-			return;
-		}
-		else if(player.beingRecruited){
-			if(game != null){
-				if(interaction.options.getSubcommand() === 'accept'){
-					console.log('accepted');
-					player.isVillain = true;
-					await interaction.client.users.send(game.recruitingPlayer.user.id, "Your recruitment of player: " + player.user.username + " has been accepted and they are now a villain.");
-				}
-				else if(interaction.options.getSubcommand() === 'decline'){
-					console.log('declined');
-					await interaction.client.users.send(game.recruitingPlayer.user.id, "Your recruitment of player: " + player.user.username + " has been rejected and they will remain a hero.");
-				}
-				player.beingRecruited = false;
-				game.players[player.index] = player;
-				game.pendingResponse = false;
-				game.villainActionReady = false;
-				saveGame();
-			}
-		}
-		else{
-			if(player === null){
-				var response = 'Error - You are not a player in the game.';
-				await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-			}
-			else{
-				var response = 'Error - You are not being recruited.';
-				await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-			}
-		}
-		//var username = interaction.options.getUser('user').username;
-		//var userID = interaction.options.getUser('user').id;
-		//await interaction.client.users.send(userID, "You are being recruited by a villain, please use the \"respond\" function to respond.");
-		//var response = 'You have attempted to recruit user: ' + username;
-		//await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		//await interaction.deleteReply();
-	},
+                .setDescription('Decline the recruitment and remain a Hero.')
+        ),
+
+    async execute(interaction) {
+        const game = getGame(interaction);
+        if (!game) return this.error(interaction, 'Error - The game has not been started.');
+
+        const player = findPlayer(game.players, interaction.user.id);
+        if (!player) return this.error(interaction, 'Error - You are not a player in the game.');
+
+        if (!player.beingRecruited) {
+            return this.error(interaction, 'Error - You are not currently being recruited.');
+        }
+
+        const recruiter = game.recruitingPlayer;
+        const accepted = interaction.options.getSubcommand() === 'accept-recruitment';
+
+        if (accepted) {
+            player.isVillain = true;
+            game.numVillains++;
+
+            // Notify recruiter
+            directMessageUser(interaction, recruiter.user.id, {
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(0x00FF00)
+                        .setTitle('✅ Recruitment Accepted')
+                        .setDescription(`Your recruitment of **${player.user.username}** was successful — they are now a Villain! 😈`)
+                        .setTimestamp()
+                ]
+            });
+
+            // Notify new villain
+            directMessageUser(interaction, player.user.id, {
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(0x8B0000)
+                        .setTitle('😈 You Have Joined the Villains')
+                        .setDescription('You have accepted the recruitment offer and are now aligned with the Villains. Play wisely...')
+                        .setTimestamp()
+                ]
+            });
+
+            // Notify other villains
+            game.players
+                .filter(p => p.isVillain && !p.isDead && p.index !== recruiter.index && p.index !== player.index)
+                .forEach(villain => {
+                    directMessageUser(interaction, villain.user.id, {
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(0x8B0000)
+                                .setTitle('🩸 Villain Ranks Grow')
+                                .setDescription(`**${player.user.username}** has joined our cause.`)
+                                .setTimestamp()
+                        ]
+                    });
+                });
+
+        } else {
+            // Declined recruitment
+            directMessageUser(interaction, recruiter.user.id, {
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(0xFF0000)
+                        .setTitle('❌ Recruitment Declined')
+                        .setDescription(`Your recruitment of **${player.user.username}** was rejected. They remain a Hero.`)
+                        .setTimestamp()
+                ]
+            });
+
+            directMessageUser(interaction, player.user.id, {
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(0x00AE86)
+                        .setTitle('🛡️ Recruitment Refused')
+                        .setDescription('You declined the recruitment offer and remain a Hero.')
+                        .setTimestamp()
+                ]
+            });
+        }
+
+        // Reset recruitment state
+        player.beingRecruited = false;
+        game.players[player.index] = player;
+        game.pendingResponse = false;
+        game.villainActionReady = false;
+        saveGame(interaction, game);
+
+        // Public vague message to keep secrecy
+        await interaction.reply({
+            content: '💤 The night passes quietly...',
+        });
+    },
+
+    error(interaction, message) {
+        return interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
+    }
 };

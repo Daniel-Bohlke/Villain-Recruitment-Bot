@@ -1,75 +1,77 @@
-const { Client, SlashCommandBuilder, MessageFlags } = require('discord.js');
-const { Player, Game, getGame, findPlayer, saveGame, directMessageUser } = require('../../helpers.js');
-
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
+const { getGame, findPlayer, saveGame, directMessageUser } = require('../../helpers.js');
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('shadow-armor')
-		.setDescription('Grants Shadow Armor to a player.')
-		.addUserOption(option =>
-		option.setName('user')
-			.setDescription('The user you would like to give the Shadow Armor to.')
-			.setRequired(true)),
-	async execute(interaction) {
-		var game = getGame(interaction);
-		if(game === null){
-			return;
-		}
-		var username = interaction.options.getUser('user').username;
-		var userID = interaction.options.getUser('user').id;
-		//Is the requesting person a villain and is the targeted person a Hero?
-		var giftingPlayer = findPlayer(game.players, interaction.user.id);
-		var targetedPlayer = findPlayer(game.players, userID);;
-		if(giftingPlayer === null){
-			//Is the requesting person even in the game?
-			var response = 'Error - You are not a player in the game.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(targetedPlayer === null){
-			//Is the targeted person even in the game?
-			var response = 'Error - User: ' + username + ' is not a player in the game';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(giftingPlayer.isVillain){
-			var response = 'Error - You are a Villain.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(!giftingPlayer.isDead){
-			var response = 'Error - You are not dead.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(game.villainActionReady){
-			var response = 'Error - It is currently the Villains\' turn to act.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(targetedPlayer.isDead){
-			var response = 'Error - The chosen player is dead.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}		
-		else if(!game.grantingShadowArmor){
-			var response = 'Error - Shadow Armor cannot be granted at this time.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else if(!giftingPlayer.canGrantShadowArmor){
-			var response = 'Error - You are not the player authorized to grant Shadow Armor at this time.';
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-		}
-		else{
-			giftingPlayer.canGrantShadowArmor = false;
-			//make sure nobody else has Shadow Armor
-			game.players.forEach((player) => player.shadowArmor = false);
-			targetedPlayer.shadowArmor = true;
-			game.villainActionReady = true;
-			game.players[giftingPlayer.index] = giftingPlayer;
-			game.players[targetedPlayer.index] = targetedPlayer;
-			saveGame();
-			await interaction.client.users.send(userID, "You have been granted the Shadow Armor and cannot die until another Hero dies.");
-			var response = 'You have granted the Shadow Armor to: ' + username;
-			await interaction.reply({ content: response, flags: MessageFlags.Ephemeral });
-			response = 'The Shadow Armor has been granted. The game may now continue.';
-			await interaction.reply({ content: response });
-			//console.log(interaction.client.text);
-		}
-		//await interaction.deleteReply();
-	},
+  data: new SlashCommandBuilder()
+    .setName('shadow-armor')
+    .setDescription('Grants Shadow Armor to a player.')
+    .addUserOption(option =>
+      option
+        .setName('user')
+        .setDescription('The user you would like to give the Shadow Armor to.')
+        .setRequired(true)
+    ),
+
+  async execute(interaction) {
+    const game = getGame(interaction);
+    if (!game) return;
+
+    const targetUser = interaction.options.getUser('user');
+    const giftingPlayer = findPlayer(game.players, interaction.user.id);
+    const target = findPlayer(game.players, targetUser.id);
+
+    // Validation
+    if (!giftingPlayer) return this.error(interaction, 'Error - You are not a player in the game.');
+    if (!target) return this.error(interaction, `Error - User: ${targetUser.username} is not a player in the game.`);
+    if (giftingPlayer.isVillain) return this.error(interaction, 'Error - You are a Villain.');
+    if (!giftingPlayer.isDead) return this.error(interaction, 'Error - You are not dead.');
+    if (game.villainActionReady) return this.error(interaction, 'Error - It is currently the Villains\' turn to act.');
+    if (target.isDead) return this.error(interaction, 'Error - The chosen player is dead.');
+    if (!game.grantingShadowArmor) return this.error(interaction, 'Error - Shadow Armor cannot be granted at this time.');
+    if (!giftingPlayer.canGrantShadowArmor) return this.error(interaction, 'Error - You are not the player authorized to grant Shadow Armor at this time.');
+
+    // Grant the Shadow Armor
+    giftingPlayer.canGrantShadowArmor = false;
+    game.grantingShadowArmor = false;
+
+    // Only one Shadow Armor can exist at a time
+    game.players.forEach(p => { p.shadowArmor = false; });
+    target.shadowArmor = true;
+
+    // After armor is granted, villains may take their next action
+    game.villainActionReady = true;
+
+    game.players[giftingPlayer.index] = giftingPlayer;
+    game.players[target.index] = target;
+    saveGame(interaction, game);
+
+    // DM the recipient
+    await directMessageUser(interaction, targetUser.id, {
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0xFFD700)
+          .setTitle('🛡️ Shadow Armor Granted')
+          .setDescription('You have been bestowed with the **Shadow Armor**. You cannot die until another Hero falls.')
+          .setTimestamp()
+      ]
+    });
+
+    // Confirmation to granting player
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0xFFD700)
+          .setTitle('✅ Shadow Armor Granted')
+          .setDescription(`The Shadow Armor has been granted to **${targetUser.username}**. The game may now continue.`)
+          .setTimestamp()
+      ]
+    });
+
+    // Public vague message (identity hidden, but clearly Shadow Armor)
+    await interaction.channel.send('🛡️ The **Shadow Armor** has been granted to a hero, but their identity remains hidden...');
+  },
+
+  error(interaction, message) {
+    return interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
+  }
 };
